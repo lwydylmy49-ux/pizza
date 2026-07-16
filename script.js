@@ -400,7 +400,7 @@ function initCartForm() {
     const orderItems = cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }));
     const total = cartTotal();
 
-    // 1) تسجيل الطلب في Supabase (إن كان مُهيّأً)
+    // تسجيل الطلب في Supabase
     if (supabaseClient) {
       try {
         const { error } = await supabaseClient.from('orders').insert([{
@@ -412,26 +412,29 @@ function initCartForm() {
           total: total,
           created_at: new Date().toISOString()
         }]);
-        if (error) console.warn('Supabase insert error:', error.message);
+        if (error) {
+          console.warn('Supabase insert error:', error.message);
+          status.classList.add('error');
+          status.textContent = 'حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى.';
+          submitBtn.disabled = false;
+          return;
+        }
       } catch (err) {
         console.warn('تعذّر حفظ الطلب في Supabase:', err);
+        status.classList.add('error');
+        status.textContent = 'حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى.';
+        submitBtn.disabled = false;
+        return;
       }
+    } else {
+      console.warn('Supabase غير مهيّأ، لم يتم حفظ الطلب.');
+      status.classList.add('error');
+      status.textContent = 'تعذّر الاتصال بقاعدة البيانات.';
+      submitBtn.disabled = false;
+      return;
     }
 
-    // 2) بناء رسالة واتساب وفتحها
-    let waMessage = `*طلب جديد من الموقع* 🍕\n\n`;
-    waMessage += `*الاسم:* ${name}\n*الهاتف:* ${phone}\n*العنوان:* ${address}\n`;
-    if (note) waMessage += `*ملاحظات:* ${note}\n`;
-    waMessage += `\n*الطلبات:*\n`;
-    orderItems.forEach(i => {
-      waMessage += `- ${i.name} × ${i.qty} (${i.price})\n`;
-    });
-    waMessage += `\n*المجموع:* ${total} دج`;
-
-    const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(waMessage)}`;
-    window.open(waUrl, '_blank');
-
-    status.textContent = '✓ تم تجهيز طلبك! أكمل الإرسال من واتساب.';
+    status.textContent = '✓ تم استلام طلبك بنجاح! سنتواصل معك قريباً.';
     submitBtn.disabled = false;
 
     // تفريغ السلة بعد الإرسال
