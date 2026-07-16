@@ -7,9 +7,6 @@
 const SUPABASE_URL = 'https://htxkdufcvlniwonnznyl.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_YPW40Btfv2hrevXUek2iDg_ovUsQnLZ';
 
-// رقم واتساب المطعم بصيغة دولية بلا + وبلا فراغات (مثال: 213555123456)
-const WHATSAPP_NUMBER = '213XXXXXXXXX';
-
 /* ============ تهيئة Supabase ============ */
 // إذا كان الرابط والمفتاح فارغين، سيبقى الإرسال عبر واتساب فقط
 let supabaseClient = null;
@@ -392,6 +389,18 @@ function initCartForm() {
     const note = document.getElementById('custNote').value.trim();
 
     if (!name || !phone || !address) return;
+
+    const phoneDigits = phone.replace(/[^\d]/g, '');
+    if (phoneDigits.length !== 10) {
+      status.classList.add('error');
+      status.textContent = 'رقم الهاتف يجب أن يتكوّن من 10 أرقام بالضبط.';
+      return;
+    }
+    if (address.length <= 4) {
+      status.classList.add('error');
+      status.textContent = 'العنوان قصير جداً، الرجاء إدخال عنوان أوضح.';
+      return;
+    }
 
     submitBtn.disabled = true;
     status.classList.remove('error');
