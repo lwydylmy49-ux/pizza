@@ -47,6 +47,7 @@ ul { list-style: none; }
   display: flex; align-items: center; justify-content: space-between;
 }
 .logo { display: flex; align-items: center; gap: 10px; }
+.logo-img { width: 28px; height: 28px; object-fit: contain; display: block; }
 .logo-text { display: flex; flex-direction: column; line-height: 1; }
 .logo-main { font-weight: 700; font-size: 20px; color: #fff; }
 .logo-sub { font-size: 10px; letter-spacing: 3px; color: #f5b754; }
