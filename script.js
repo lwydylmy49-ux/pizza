@@ -2,21 +2,9 @@
    بيتزا لذيذة - جافا سكريبت عادي (Vanilla)
    ========================================================= */
 
-/* ============ الإعدادات (عمّرها بمعلوماتك) ============ */
-// رابط ومفتاح مشروع Supabase الخاص بك (Settings > API)
-const SUPABASE_URL = 'https://htxkdufcvlniwonnznyl.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_YPW40Btfv2hrevXUek2iDg_ovUsQnLZ';
-
-/* ============ تهيئة Supabase ============ */
-// إذا كان الرابط والمفتاح فارغين، سيبقى الإرسال عبر واتساب فقط
-let supabaseClient = null;
-try {
-  if (window.supabase && !SUPABASE_URL.includes('ضع_') && !SUPABASE_ANON_KEY.includes('ضع_')) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
-} catch (e) {
-  console.warn('Supabase غير مهيّأ:', e);
-}
+/* ============ الإعدادات ============ */
+// رابط الخادم المحلي (Node.js + PostgreSQL) — غيّره إذا شغّلت الخادم على منفذ أو جهاز آخر
+const API_BASE_URL = 'http://localhost:3000/api';
 
 /* ============ DATA ============ */
 const mealsData = [
@@ -373,7 +361,7 @@ function initCartModal() {
   renderCart();
 }
 
-/* ============ SEND ORDER (Supabase + WhatsApp) ============ */
+/* ============ SEND ORDER (Local API) ============ */
 function initCartForm() {
   const form = document.getElementById('cartForm');
   const status = document.getElementById('cartStatus');
@@ -409,36 +397,32 @@ function initCartForm() {
     const orderItems = cart.map(i => ({ name: i.name, price: i.price, qty: i.qty }));
     const total = cartTotal();
 
-    // تسجيل الطلب في Supabase
-    if (supabaseClient) {
-      try {
-        const { error } = await supabaseClient.from('orders').insert([{
+    // تسجيل الطلب عبر الخادم المحلي (PostgreSQL)
+    try {
+      const res = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           customer_name: name,
           customer_phone: phone,
           customer_address: address,
           note: note,
           items: orderItems,
-          total: total,
-          created_at: new Date().toISOString()
-        }]);
-        if (error) {
-          console.warn('Supabase insert error:', error.message);
-          status.classList.add('error');
-          status.textContent = 'حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى.';
-          submitBtn.disabled = false;
-          return;
-        }
-      } catch (err) {
-        console.warn('تعذّر حفظ الطلب في Supabase:', err);
+          total: total
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.warn('خطأ من الخادم:', data.error);
         status.classList.add('error');
-        status.textContent = 'حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى.';
+        status.textContent = data.error || 'حدث خطأ أثناء إرسال الطلب، حاول مرة أخرى.';
         submitBtn.disabled = false;
         return;
       }
-    } else {
-      console.warn('Supabase غير مهيّأ، لم يتم حفظ الطلب.');
+    } catch (err) {
+      console.warn('تعذّر الاتصال بالخادم:', err);
       status.classList.add('error');
-      status.textContent = 'تعذّر الاتصال بقاعدة البيانات.';
+      status.textContent = 'تعذّر الاتصال بالخادم، تأكد من تشغيله.';
       submitBtn.disabled = false;
       return;
     }
